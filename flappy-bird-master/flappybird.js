@@ -73,7 +73,7 @@ function update(currentTime) {
     }
     context.clearRect(0, 0, board.width, board.height);
 
-    const deltaTime = (currentTime - lastTime) / 1000;  
+    const deltaTime = (currentTime - lastTime) / 1000 * 60; //convert to seconds, then adjust for 60fps  
     lastTime = currentTime;
 
     //bird
