@@ -30,7 +30,7 @@ let topPipeImg;
 let bottomPipeImg;
 
 //physics
-let velocityX = -2; //pipes moving left speed
+let velocityX = -6; //pipes moving left speed
 let velocityY = 0; //bird jump speed
 let gravity = 0.4;
 let lastTime = 0;
@@ -77,7 +77,7 @@ function update() {
     lastTime = currentTime;
 
     //bird
-    velocityY +=  * deltaTime={};
+    velocityY += gravity * deltaTime;
     // bird.y += velocityY;
     bird.y = Math.max(bird.y + velocityY, 0); //apply gravity to current bird.y, limit the bird.y to top of the canvas
     context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
