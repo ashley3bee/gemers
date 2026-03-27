@@ -33,6 +33,7 @@ let bottomPipeImg;
 let velocityX = -2; //pipes moving left speed
 let velocityY = 0; //bird jump speed
 let gravity = 0.4;
+let lastTime = 0;
 
 let gameOver = false;
 let score = 0;
@@ -72,8 +73,11 @@ function update() {
     }
     context.clearRect(0, 0, board.width, board.height);
 
+    const deltaTime = (currentTime - lastTime) / 1000;  
+    lastTime = currentTime;
+
     //bird
-    velocityY += gravity;
+    velocityY +=  * deltaTime={};
     // bird.y += velocityY;
     bird.y = Math.max(bird.y + velocityY, 0); //apply gravity to current bird.y, limit the bird.y to top of the canvas
     context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
