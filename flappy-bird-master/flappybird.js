@@ -66,7 +66,7 @@ window.onload = function() {
     document.addEventListener("keydown", moveBird);
 }
 
-function update() {
+function update(currentTime) {
     requestAnimationFrame(update);
     if (gameOver) {
         return;
