@@ -1,9 +1,16 @@
-body {
+body, html {
+    margin: 0;
+    padding: 0;
     font-family:'Courier New', Courier, monospace;
     text-align: center;
+    overflow: hidden
 }
 
 #board {
-    /* background-color: skyblue; */
+    height: 100vh;
     background-image: url("./flappybirdbg.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    position: relative;
 }
