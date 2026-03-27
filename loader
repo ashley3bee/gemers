@@ -1,17 +1,152 @@
-async function loadFromGitHub(githubUrl) {
-  // Convert normal GitHub URL → raw.githubusercontent.com URL
-  const rawUrl = githubUrl
-    .replace("https://github.com/", "https://raw.githubusercontent.com/")
-    .replace("/blob/", "/");
+const githubUrl = "https://github.com/ashley3bee/gemers/tree/main/";
 
-  // Fetch the HTML
-  const response = await fetch(rawUrl);
-  const html = await response.text();
+const games = [
+    {
+        name: "Flappy Bird",
+        repo: "flappy-bird-master"
+    }
+];
 
-  // Inject into the target element
-  document.innerHTML = html;
+function log(...args) {
+    const p = document.createElement("p");
+
+    // Join all args into a single string
+    let text = args.join(" ");
+
+    // Convert URLs into clickable links
+    const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    text = text.replace(urlPattern, (url) => {
+        if (!/^https?:\/\//i.test(url)) {
+            url = 'http://' + url;
+        }
+        return `<a href="${url}" target="_blank">${url}</a>`;
+    });
+
+    // Replace newlines with <br> so they display properly in HTML
+    text = text.replace(/\n/g, "<br>");
+
+    p.innerHTML = text;
+    document.body.appendChild(p);
 }
 
-loadFromGitHub(
-  "https://github.com/ashley3bee/gemers/tree/main/flappy-bird-master",
-);
+async function test() {
+    const gameName = "Flappy Bird";
+    const game = games.find(g => g.name === gameName);
+
+    if (!game) {
+        log("Game not found!");
+        return;
+    }
+
+    const repoUrl = `https://github.com/ashley3bee/gemers/tree/main/${game.repo}`;
+    const rawUrl = repoUrl.replace("/github.com/", "/raw.githubusercontent.com/").replace("/tree/main/", "/refs/heads/main/") + (repoUrl.endsWith('/') ? '' : '/');
+    const htmlUrl = rawUrl+ "index.html";
+
+    // Parse a script ===================
+    async function parseScript(content) {
+        const filePattern = /['"]([\w\/\-.]+\.(?:png|jpg|jpeg|webpg|gif|mp3|wav|ogg))['"]/g;
+        const matches = [...content.matchAll(filePattern)];
+        console.log("Matches found:", matches);
+        const fetchPromises = matches.map(match => {
+            const fileName = match[1]; // Use match[1] to skip quotes
+            const fileUrl = new URL(fileName, rawUrl).href; // Build full URL
+            log(`Fetching file: ${fileName} from URL: ${fileUrl}`);
+
+            return fetch(fileUrl)
+                .then(resp => {
+                    if (!resp.ok) throw new Error(`Failed: ${fileUrl}`);
+                    return resp.blob();
+                })
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    console.log(`Blob URL created for ${fileUrl}: ${blobUrl}`);
+                    return blobUrl;
+                })
+                .catch(err => {
+                    console.error(err);
+                    return fileUrl; // fallback to original URL if fetch fails
+                });
+        });
+        const blobUrls = await Promise.all(fetchPromises);
+        let updatedContent = content;
+        matches.forEach((match, i) => {
+            updatedContent = updatedContent.replace(match[0], `'${blobUrls[i]}'`);
+        });
+        console.log("Updated script content!");
+        return updatedContent;
+    }
+    
+
+    // Begin loading the HTML file and processing it ====================
+    try {
+        // Fetch HTML content
+        const htmlResponse = await fetch(htmlUrl);
+        if (!htmlResponse.ok) {
+            throw new Error(`Failed to fetch HTML from ${htmlUrl}`);
+        }
+        const htmlText = await htmlResponse.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, "text/html");
+
+        // Handle external scripts
+        const scripts = doc.querySelectorAll('script[src]');
+
+        // Process all external scripts (convert to inline)
+        for (const script of scripts) {
+            const src = script.getAttribute('src');
+            const scriptUrl = new URL(src, rawUrl).href;
+            const scriptResp = await fetch(scriptUrl);
+            const scriptText = await scriptResp.text();
+            const inlineText = await parseScript(scriptText);
+            const inlineScript = document.createElement('script');
+            inlineScript.textContent = inlineText;
+
+            document.body.appendChild(inlineScript);
+            script.remove(); // Remove original script
+        }
+
+        // Inline stylesheets with rewritten URLs
+        const links = doc.querySelectorAll('link[rel="stylesheet"][href]');
+        for (const link of links) {
+            const href = link.getAttribute('href');
+            const cssUrl = new URL(href, rawUrl).href;
+            const cssResp = await fetch(cssUrl);
+            let cssText = await cssResp.text();
+            // Rewrite all url(...) in CSS
+            cssText = cssText.replace(/url\(["']?(.*?)["']?\)/g, (m, path) => {
+                const absUrl = new URL(path, rawUrl).href;
+                return `url('${absUrl}')`;
+            });
+            const styleEl = document.createElement('style');
+            styleEl.textContent = cssText;
+            document.head.appendChild(styleEl);
+            link.remove();
+        }   
+
+        // Inline scripts (already in HTML)
+        const inlineScripts = doc.querySelectorAll('script:not([src])');
+        for (const s of inlineScripts) {
+            const inline = document.createElement('script');
+            inline.textContent = s.textContent;
+            document.body.appendChild(inline);
+            s.remove();
+        }
+
+        // Once all scripts, styles, and images have been processed, replace the entire document body
+        document.body.innerHTML = doc.body.innerHTML;
+
+        // After all scripts, styles, images are processed:
+        if (typeof window.onload === "function") {
+            console.log("Triggering loaded script's window.onload()");
+            const onloadFn = window.onload; // store reference
+            window.onload = null; // prevent accidental multiple calls
+            onloadFn(); // manually call it
+        }
+
+    } catch (error) {
+        log(`Error: ${error.message}`);
+        console.error(error);
+    }
+}
+
+test();
