@@ -89,7 +89,9 @@ window.onload = function() {
     placePipes();
 
     requestAnimationFrame(update);
-    document.addEventListener("keydown", moveBird);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("touchstart", handleJump);
+    document.addEventListener("mousedown", handleJump);
 }
 
 function drawBird() {
@@ -196,21 +198,25 @@ function placePipes() {
     pipeArray.push(bottomPipe);
 }
 
-function moveBird(e) {
-    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyW") {
-        //jump
-        velocityY = -6;
-        playSFX(sfxPath.wing);
+function handleJump() {
+    //jump
+    velocityY = -6;
+    playSFX(sfxPath.wing);
 
-        //reset game
-        if (gameOver) {
-            bird.y = birdY;
-            pipeArray = [];
-            score = 0;
-            gameOver = false;
-            lastTime = 0;
-            placePipes(); // else will spawn immediately
-        }
+    //reset game
+    if (gameOver) {
+        bird.y = birdY;
+        pipeArray = [];
+        score = 0;
+        gameOver = false;
+        lastTime = 0;
+        placePipes(); // else will spawn immediately
+    }
+}
+
+function handleKeyDown(e) {
+    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyW") {
+        handleJump();
     }
 }
 
