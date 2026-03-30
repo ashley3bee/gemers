@@ -128,7 +128,7 @@ function update(currentTime) {
 
     // bird physics
     velocityY += gravity * deltaTime;
-    bird.y = Math.max(bird.y + velocityY, 0);
+    bird.y = Math.max(bird.y + velocityY * deltaTime, 0);
     drawBird();
 
     if (bird.y > board.height) gameOver = true;
